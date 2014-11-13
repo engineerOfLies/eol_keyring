@@ -1,6 +1,4 @@
 #include "eol_keychain.h"
-#include "eol_loader.h"
-#include "eol_logger.h"
 #include <glib/gstring.h>
 #include <glib/glist.h>
 #include <glib/ghash.h>

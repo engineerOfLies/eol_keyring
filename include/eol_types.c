@@ -16,7 +16,6 @@
     along with the EOL game engine.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "eol_types.h"
-#include "eol_logger.h"
 #include <math.h>
 
 void eol_vec3d_print(eolLine out, eolVec3D v)
@@ -212,9 +211,6 @@ eolVec2D *eol_vec2d_new()
   vec = (eolVec2D *)malloc(sizeof(eolVec2D));
   if (vec == NULL)
   {
-    eol_logger_message(
-      EOL_LOG_ERROR,
-      "eol_types:failed to allocate a new vector!\n");
     return NULL;
   }
   eol_vec2d_clear((*vec));
@@ -227,9 +223,6 @@ eolVec3D *eol_vec3d_new()
   vec = (eolVec3D *)malloc(sizeof(eolVec3D));
   if (vec == NULL)
   {
-    eol_logger_message(
-      EOL_LOG_ERROR,
-      "eol_types:failed to allocate a new vector!\n");
     return NULL;
   }
   eol_vec3d_clear((*vec));
@@ -242,9 +235,6 @@ eolVec4D *eol_vec4d_new()
   vec = (eolVec4D *)malloc(sizeof(eolVec4D));
   if (vec == NULL)
   {
-    eol_logger_message(
-      EOL_LOG_ERROR,
-      "eol_types:failed to allocate a new vector!\n");
     return NULL;
   }
   eol_vec4d_clear((*vec));

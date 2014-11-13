@@ -18,7 +18,6 @@
     along with the EOL game engine.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "eol_opengl.h"
 #include <chipmunk/chipmunk.h>
 #include <SDL.h>
 
@@ -89,8 +88,8 @@ char *eol_string_from_bool(eolBool b);
 /*
  * The Floating point numbers 
 */
-typedef GLfloat  eolFloat;
-typedef GLdouble eolDouble;
+typedef float  eolFloat;
+typedef double eolDouble;
 
 #define random()  ((rand () & 0x7fff) / ((eolFloat)0x7fff))
 #define crandom() (2.0 * (random() - 0.5))

@@ -1,6 +1,4 @@
 #include "eol_config.h"
-#include "eol_logger.h"
-#include "eol_loader.h"
 #include <glib.h>
 #include <yaml.h>
 
@@ -16,18 +14,13 @@ void eol_config_parse_tier(yaml_parser_t *parser, eolKeychain *cfg);
 
 void eol_config_init()
 {
-  eol_logger_message( EOL_LOG_INFO, "eol_config: initializing\n");
   _eol_config_initialized = eolTrue;
   atexit(eol_config_deinit);
-  eol_logger_load_config();
-  eol_logger_message( EOL_LOG_INFO, "eol_config: initialized\n");
 }
 
 void eol_config_deinit(void)
 {
-  eol_logger_message( EOL_LOG_INFO, "eol_config: closing\n");
   _eol_config_initialized = eolFalse;
-  eol_logger_message( EOL_LOG_INFO, "eol_config: closed\n");
 }
 
 eolConfig *eol_config_new()
@@ -36,7 +29,6 @@ eolConfig *eol_config_new()
   config = malloc(sizeof(eolConfig));
   if (config == NULL)
   {
-    eol_logger_message( EOL_LOG_ERROR, "eol_config: Unable to allocate config!\n");
     return NULL;
   }
   memset(config,0,sizeof(eolConfig));
@@ -47,10 +39,7 @@ void eol_config_save_binary(eolConfig *conf, char* filename)
 {
   eolFile *file = NULL;
   if (!conf)return;
-  file = eol_loader_write_file_binary(filename);
-  if (file == NULL)return;
-  eol_loader_write_keychain_link(conf->_node,file);
-  eol_loader_close_file(&file);
+  /*TODO*/
 }
 
 eolConfig *eol_config_load_binary(char* filename)
@@ -71,15 +60,47 @@ eolConfig *eol_config_load_binary(char* filename)
   return config;
 }
 
+size_t eol_config_get_file_size(FILE *file)
+{
+  size_t char_count = 0;
+  char * buffer;
+  char temp[2];
+  if (!file)return 0;
+  while(fread(temp, sizeof(char), 1, file) != 0)
+  {
+    char_count++;
+  }
+  rewind(file);
+  return char_count;
+}
+
+char *eol_get_file_buffer(size_t *osize, FILE *file)
+{
+  char * buffer = NULL;
+  size_t size = 0;
+  if (!file)return NULL;
+  size = eol_config_get_file_size(file);
+  if (size <= 0) return NULL;
+  buffer = (char *)malloc(sizeof(char)*size);
+  if (!buffer)return NULL;
+  if (fread(buffer,sizeof(char),size,file) == 0)return NULL;
+  if (osize)
+  {
+    *osize = size;
+  }
+  return buffer;
+}
+
 eolConfig *eol_config_load(char* filename)
 {
   yaml_parser_t parser;
-  eolFile *input = NULL;
+  char *buffer = NULL;
+  size_t size = 0;
+  FILE *input = NULL;
   eolConfig *config = NULL;
   
   if(!yaml_parser_initialize(&parser))
   {
-    eol_logger_message( EOL_LOG_ERROR, "eol_config: Failed to initialize yaml parser\n");
     return NULL;
   }
 
@@ -90,25 +111,25 @@ eolConfig *eol_config_load(char* filename)
   config->_node = eol_keychain_new_hash();
   if(config->_node == NULL)
   {
-    eol_logger_message( EOL_LOG_ERROR, "eol_config: Unable to allocate keychain for config\n");
     return NULL;
   }
-  input = eol_loader_read_file(filename);
+  input = fopen(filename,"r");
   if(input == NULL)
   {
-    eol_logger_message( EOL_LOG_ERROR, "eol_config: Can't open config file %s\n", filename );
     return NULL;
   }
   /*
   
     yaml_parser_set_input_file(&parser, input->file);
   */
+  
   /*TODO: test the following on alternate endianness architectures before deleting the above*/
-  yaml_parser_set_input_string(&parser,(const unsigned char *)input->_buffer,input->size);
+  buffer = eol_get_file_buffer(&size,input);
+  yaml_parser_set_input_string(&parser, (const unsigned char *)buffer, size);
   eol_config_parse_tier(&parser, config->_node);
 
   yaml_parser_delete(&parser);
-  eol_loader_close_file(&input);
+  fclose(input);
   return config;
 }
 
@@ -152,11 +173,9 @@ void eol_config_parse_sequence(yaml_parser_t *parser, eolKeychain *chain)
         /* terminate the while loop, see below */
         break;
       default:
-        eol_logger_message( EOL_LOG_INFO, "eol_config: unhandled YAML event %d\n", event.type);
     }
     if(parser->error != YAML_NO_ERROR)
     {
-      eol_logger_message( EOL_LOG_ERROR, "eol_config: yaml_error_type_e %d: %s %s at (line: %lu, col: %lu)\n",
                           parser->error, parser->context, parser->problem, parser->problem_mark.line,
                           parser->problem_mark.column);
                           return;
@@ -189,14 +208,12 @@ void eol_config_parse_tier(yaml_parser_t *parser, eolKeychain *chain)
         {
           /* state is VAL or SEQ */
           /* TODO data type logic should go here */
-          eol_logger_message( EOL_LOG_INFO, "eol_config: adding key -> value (%s -> %s)\n", last_key, event.data.scalar.value);
           next = eol_keychain_new_string((char *)event.data.scalar.value);
           eol_keychain_hash_insert(chain,last_key,next);
         }
         state ^= VAL; /* Toggles KEY/VAL, avoids touching SEQ */
         break;
       case YAML_SEQUENCE_START_EVENT:
-        eol_logger_message(EOL_LOG_INFO,"eol_config: adding sequence %s...\n",last_key);
         next = eol_keychain_new_list();
         eol_keychain_hash_insert(chain,last_key,
                                  next);
@@ -204,7 +221,6 @@ void eol_config_parse_tier(yaml_parser_t *parser, eolKeychain *chain)
         break;
       case YAML_MAPPING_START_EVENT:
         if (strlen(last_key) == 0)break;/*first level is implied hash.*/
-        eol_logger_message(EOL_LOG_INFO,"eol_config: adding hash %s...\n",last_key);
         next = eol_keychain_new_hash();
         eol_keychain_hash_insert(chain,last_key,next);
         state ^= VAL;
@@ -217,11 +233,9 @@ void eol_config_parse_tier(yaml_parser_t *parser, eolKeychain *chain)
         /* terminate the while loop, see below */
         break;
       default:
-        eol_logger_message( EOL_LOG_INFO, "eol_config: unhandled YAML event %d\n", event.type);
     }
     if(parser->error != YAML_NO_ERROR)
     {
-      eol_logger_message( EOL_LOG_ERROR, "eol_config: yaml_error_type_e %d: %s %s at (line: %lu, col: %lu)\n",
                           parser->error, parser->context, parser->problem, parser->problem_mark.line,
                           parser->problem_mark.column);
                           return;
