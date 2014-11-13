@@ -1,0 +1,3 @@
+eol_config.o: eol_config.c eol_config.h eol_types.h eol_keychain.h
+eol_keychain.o: eol_keychain.c eol_keychain.h eol_types.h
+eol_types.o: eol_types.c eol_types.h

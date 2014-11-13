@@ -15,13 +15,13 @@ OBJECTS = $(patsubst %.c,%.o,$(wildcard *.c))
 #
 
 # Linux
-PROJECT = eol
+PROJECT = eol_keyring
 CC      = gcc
 #CC      = clang
 GLIB_CFLAGS = `pkg-config --cflags glib-2.0`
 GLIB_LDFLAGS = `pkg-config --libs glib-2.0`
 SDL_CFLAGS = `sdl-config --cflags` 
-SDL_LDFLAGS = `sdl-config --libs` -lSDL_image -lSDL_ttf -lSDL_mixer -lSDL_net -lGLU -lz -lphysfs -lglib-2.0 -lchipmunk
+SDL_LDFLAGS = `sdl-config --libs` -lglib-2.0 
 LFLAGS = -g -shared -Wl,-soname,lib$(PROJECT).so.1 -o ../lib/lib$(PROJECT).so.1.0.1
 CFLAGS = -g  -fPIC -Wall -pedantic -Wno-unknown-pragmas 
 # -fgnu89-inline 

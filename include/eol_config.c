@@ -37,7 +37,6 @@ eolConfig *eol_config_new()
 
 void eol_config_save_binary(eolConfig *conf, char* filename)
 {
-  eolFile *file = NULL;
   if (!conf)return;
   /*TODO*/
 }
@@ -45,19 +44,8 @@ void eol_config_save_binary(eolConfig *conf, char* filename)
 eolConfig *eol_config_load_binary(char* filename)
 {
   eolConfig *config = NULL;
-  eolFile *file = NULL;
-  file = eol_loader_read_file_binary(filename);
-  if (file == NULL)return NULL;
-  config = eol_config_new();
-  if (config == NULL)
-  {
-    eol_loader_close_file(&file);
-    return NULL;
-  }
-  eol_line_cpy(config->filename,filename);
-  config->_node = eol_loader_read_keychain_link(file);
-  eol_loader_close_file(&file);
-  return config;
+  /*TODO*/
+  return NULL;
 }
 
 size_t eol_config_get_file_size(FILE *file)
@@ -83,7 +71,7 @@ char *eol_get_file_buffer(size_t *osize, FILE *file)
   if (size <= 0) return NULL;
   buffer = (char *)malloc(sizeof(char)*size);
   if (!buffer)return NULL;
-  if (fread(buffer,sizeof(char),size,file) == 0)return NULL;
+  fread(buffer,sizeof(char),size,file);
   if (osize)
   {
     *osize = size;
@@ -116,12 +104,9 @@ eolConfig *eol_config_load(char* filename)
   input = fopen(filename,"r");
   if(input == NULL)
   {
+    //TODO CLEANUP
     return NULL;
   }
-  /*
-  
-    yaml_parser_set_input_file(&parser, input->file);
-  */
   
   /*TODO: test the following on alternate endianness architectures before deleting the above*/
   buffer = eol_get_file_buffer(&size,input);
@@ -173,12 +158,12 @@ void eol_config_parse_sequence(yaml_parser_t *parser, eolKeychain *chain)
         /* terminate the while loop, see below */
         break;
       default:
+        fprintf(stderr,"eol_config_parse_sequence: unhandled event\n");
     }
     if(parser->error != YAML_NO_ERROR)
     {
-                          parser->error, parser->context, parser->problem, parser->problem_mark.line,
-                          parser->problem_mark.column);
-                          return;
+      fprintf(stderr,"eol_config_parse_sequence: unhandled event\n");
+      return;
     }
     yaml_event_delete(&event);
   }while (!done);
@@ -233,12 +218,12 @@ void eol_config_parse_tier(yaml_parser_t *parser, eolKeychain *chain)
         /* terminate the while loop, see below */
         break;
       default:
+        fprintf(stderr,"eol_config_parse_tier: unhandled event\n");
     }
     if(parser->error != YAML_NO_ERROR)
     {
-                          parser->error, parser->context, parser->problem, parser->problem_mark.line,
-                          parser->problem_mark.column);
-                          return;
+      fprintf(stderr,"eol_config_parse_tier: error\n");
+      return;
     }
     yaml_event_delete(&event);
   }
